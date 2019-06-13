@@ -185,7 +185,6 @@ public class UserDao {
 		} else {
 			System.out.println(msg);
 		}
-		
-		// ÖĞÎÄ²âÊÔ
 	}
+	// testä¸­æ–‡
 }
