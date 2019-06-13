@@ -98,7 +98,7 @@ public class UserDao {
 		ResultSet rs = null;
 		try {
 			state = connection.prepareStatement(
-					"select paperid, paper_name from q_paper where uid = ?");
+					"select paperid, paper_name, publish_time, cutoff_time from q_paper where uid = ?");
 			state.setLong(1, user.getUid());
 			rs = state.executeQuery();
 			while (rs.next()) {
@@ -106,6 +106,8 @@ public class UserDao {
 				paper.setPaperid(rs.getLong("paperid"));
 				paper.setPapername(rs.getString("paper_name"));
 				paper.setOwnerid(user.getUid());
+				paper.setPublish_time(rs.getTimestamp("publish_time"));
+				paper.setCutoff_time(rs.getTimestamp("cutoff_time"));
 				ownPapers.add(paper);
 			}
 		} catch (SQLException e) {
@@ -117,14 +119,39 @@ public class UserDao {
 	}
 	
 	public ArrayList<Paper> getAllowedPaper() {
-		PreparedStatement state = null, state2 = null;
+		PreparedStatement state = null;
 		ArrayList<Paper> allowedPaper = new ArrayList<Paper>();
+		ArrayList<Long> allowedPaperid = new ArrayList<Long>();
+		ResultSet rs = null;
 		try {
 			state = connection.prepareStatement(
 					"select paperid from q_allow_answer where uid = ?;");
-			state = 
-			
+			state.setLong(1, user.getUid());
+			rs = state.executeQuery();
+			while (rs.next()) {
+				allowedPaperid.add(rs.getLong("paperid"));
+			}
+
+			state = connection.prepareStatement(
+					"select uid, paper_name from q_paper where paperid = ?");
+			for (long x : allowedPaperid) {
+				state.setLong(1, x);
+				rs = state.executeQuery();
+				Paper paper = new Paper();
+				paper.setPaperid(rs.getLong("paperid"));
+				paper.setPapername(rs.getString("paper_name"));
+				paper.setOwnerid(rs.getLong("uid"));
+				paper.setPublish_time(rs.getTimestamp("publish_time"));
+				paper.setCutoff_time(rs.getTimestamp("cutoff_time"));
+				allowedPaper.add(paper);
+			}
+		} catch (SQLException e) {
+			System.out.println("Unknown SQLException!");
+			e.printStackTrace();
+			System.exit(-11);
 		}
+		
+		return allowedPaper;
 	}
 	
 	public static void main(String[] args) {
@@ -159,6 +186,6 @@ public class UserDao {
 			System.out.println(msg);
 		}
 		
-		
+		// ÷–Œƒ≤‚ ‘
 	}
 }
