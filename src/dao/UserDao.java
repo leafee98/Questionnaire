@@ -6,6 +6,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 
 public class UserDao {
@@ -19,6 +20,10 @@ public class UserDao {
 	public UserDao(User u) { 
 		this();
 		this.setUser(u);
+	}
+	
+	public User getUser() {
+		return this.user;
 	}
 	
 	public void setUser(User u) {
@@ -63,7 +68,7 @@ public class UserDao {
 		return checkFlag;
 	}
 	
-	public String addUser() {
+	public String addUser(User user) {
 		String addResult = null;
 		PreparedStatement test = null;
 		PreparedStatement state = null;
@@ -79,6 +84,7 @@ public class UserDao {
 				state.setString(1, user.getUsername());
 				state.setString(2, user.getPasswd());
 				state.setString(3, user.getNickname());
+				state.executeQuery();
 				
 				// reset uid and other thing;
 				this.checkUser(user.getUsername(), user.getPasswd());
@@ -90,6 +96,10 @@ public class UserDao {
 			System.exit(-4);
 		}
 		return addResult;
+	}
+	
+	public String addUser() {
+		return this.addUser(this.user);
 	}
 	
 	public ArrayList<Paper> getOwnPapers() {
@@ -121,30 +131,43 @@ public class UserDao {
 	public ArrayList<Paper> getAllowedPaper() {
 		PreparedStatement state = null;
 		ArrayList<Paper> allowedPaper = new ArrayList<Paper>();
-		ArrayList<Long> allowedPaperid = new ArrayList<Long>();
 		ResultSet rs = null;
 		try {
 			state = connection.prepareStatement(
-					"select paperid from q_allow_answer where uid = ?;");
+					"select q_paper.paperid as paperid, paper_name, publish_time, cutoff_time " +
+					"from q_paper join q_user on q_paper.uid = q_user.uid " +
+					"where q_user.uid = ?");
 			state.setLong(1, user.getUid());
 			rs = state.executeQuery();
 			while (rs.next()) {
-				allowedPaperid.add(rs.getLong("paperid"));
+				Paper p = new Paper();
+				p.setPaperid(rs.getLong("paperid"));
+				p.setOwnerid(user.getUid());
+				p.setPapername(rs.getString("paper_name"));
+				p.setPublish_time(rs.getTimestamp("publish_time"));
+				p.setCutoff_time(rs.getTimestamp("cutoff_time"));
+				allowedPaper.add(p);
 			}
 
-			state = connection.prepareStatement(
-					"select uid, paper_name from q_paper where paperid = ?");
-			for (long x : allowedPaperid) {
-				state.setLong(1, x);
-				rs = state.executeQuery();
-				Paper paper = new Paper();
-				paper.setPaperid(rs.getLong("paperid"));
-				paper.setPapername(rs.getString("paper_name"));
-				paper.setOwnerid(rs.getLong("uid"));
-				paper.setPublish_time(rs.getTimestamp("publish_time"));
-				paper.setCutoff_time(rs.getTimestamp("cutoff_time"));
-				allowedPaper.add(paper);
-			}
+//			state.setLong(1, user.getUid());
+//			rs = state.executeQuery();
+//			while (rs.next()) {
+//				allowedPaperid.add(rs.getLong("paperid"));
+//			}
+//
+//			state = connection.prepareStatement(
+//					"select q_user.uid, paper_name,  from q_paper where paperid = ?");
+//			for (long x : allowedPaperid) {
+//				state.setLong(1, x);
+//				rs = state.executeQuery();
+//				Paper paper = new Paper();
+//				paper.setPaperid(x);
+//				paper.setPapername(rs.getString("paper_name"));
+//				paper.setOwnerid(rs.getLong("uid"));
+//				paper.setPublish_time(rs.getTimestamp("publish_time"));
+//				paper.setCutoff_time(rs.getTimestamp("cutoff_time"));
+//				allowedPaper.add(paper);
+//			}
 		} catch (SQLException e) {
 			System.out.println("Unknown SQLException!");
 			e.printStackTrace();
@@ -155,36 +178,61 @@ public class UserDao {
 	}
 	
 	public static void main(String[] args) {
-//		UserDao ud = new UserDao();
-//		if (ud.checkUser("leafee", "feng")) {
-//			System.out.println("current user and passwd");
-//		}
-//		ArrayList<Paper> papers = ud.getOwnPapers();
-//		for (Paper x : papers) {
-//			for (Question y : new PaperDao(x).getQuestion()) {
-//				System.out.println(y.getQuestion());
-//				for (Selection z : new QuestionDao(y).getSelection()) {
-//					System.out.println(z.getSelection_describe());
-//				}
-//				System.out.println();
-//				for (Answer z : new QuestionDao(y).getAnswers()) {
-//					System.out.println(z.getAnswer());
-//				}
-//				System.out.println("==========");
-//			}
-//		}
-
 		User u = new User();
 		u.setPasswd("feng");
 		u.setUsername("leafee");
 		u.setNickname("Leafee");
-		UserDao ud = new UserDao(u);
+		UserDao ud = new UserDao();
 		String msg;
-		if ((msg = ud.addUser()) == null) {
+		if ((msg = ud.addUser(u)) == null) {
 			System.out.println("Succeed!");
 		} else {
 			System.out.println(msg);
 		}
+		
+		System.out.println(ud.getUser().getUid());
+		Paper paper = new Paper();
+		paper.setPapername("added paper");
+		paper.setOwnerid(ud.getUser().getUid());
+		paper.setPublish_time(Timestamp.valueOf("2019-06-01 09:00:00"));
+		paper.setCutoff_time(Timestamp.valueOf("2019-07-01 00:00:00"));
+		PaperDao papd = new PaperDao(paper);
+		papd.addPaper();
+		
+		Question quest = new Question();
+		quest.setPaperid(papd.getPaper().getPaperid());
+		quest.setQuestion("added question");
+		quest.setType("raido");
+		QuestionDao questD = new QuestionDao(quest);
+		questD.addQuestion();
+		
+		Selection selec1 = new Selection();
+		selec1.setQuestionid(questD.getQuestion().getQuestionid());
+		selec1.setSelection_describe("added selection");
+		questD.addSelection(selec1);
+		
+		Answer ans = new Answer();
+		ans.setAnswer("test answer");
+		ans.setQuestionid(questD.getQuestion().getQuestionid());
+		ans.setRespondent(ud.getUser().getUid());
+		questD.addAnswer(ans);
+		
+		questD.addSelection("added selection by string");
+		questD.addAnswer("added answerContent by string", ud.getUser().getUid());
+		
+		papd.addAllowUser(ud.getUser().getUid());
+		
+		System.out.println("======");
+		System.out.println(ud.getAllowedPaper().get(0).getPaperid());
+		System.out.println(ud.getOwnPapers().get(0).getPaperid());
+		
+		System.out.println("========");
+		System.out.println(papd.getQuestion().get(0).getQuestion());
+		System.out.println(papd.getAllowedUser().get(0).getNickname());
+
+		System.out.println("=========");
+		System.out.println(questD.getAllAnswers().get(0).getAnswer());
+		System.out.println(questD.getSpecificAnswers(ud.getUser().getUid()).get(0).getAnswer());
+		System.out.println(questD.getSelection().get(0).getSelection_describe());
 	}
-	// test中文
 }
