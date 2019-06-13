@@ -71,7 +71,7 @@ public class UserDao {
 			// if username already exists
 			test = connection.prepareStatement("select * from q_user where username = ?");
 			test.setString(1,  user.getUsername());
-			if (!test.execute()) {
+			if (test.executeQuery().next()) {
 				addResult = "Username dumplicate!";
 			} else {
 				state = connection.prepareStatement(
@@ -114,6 +114,17 @@ public class UserDao {
 			System.exit(-1);
 		}
 		return ownPapers;
+	}
+	
+	public ArrayList<Paper> getAllowedPaper() {
+		PreparedStatement state = null, state2 = null;
+		ArrayList<Paper> allowedPaper = new ArrayList<Paper>();
+		try {
+			state = connection.prepareStatement(
+					"select paperid from q_allow_answer where uid = ?;");
+			state = 
+			
+		}
 	}
 	
 	public static void main(String[] args) {
