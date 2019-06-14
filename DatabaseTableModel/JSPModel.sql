@@ -6,7 +6,8 @@ create table q_user (
 	uid int primary key auto_increment,
 	username char(30) not null unique,
 	passwd char(32) not null,
-	nickname nchar(100) not null
+	nickname nchar(100) not null,
+	admin bool not null,
 );
 
 create table q_paper (

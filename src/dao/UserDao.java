@@ -45,13 +45,14 @@ public class UserDao {
 
 			if (rs.next() && rs.getLong("result") == 1) {
 				state = connection.prepareStatement(
-						"select uid, username, passwd, nickname from q_user where username = ?;");
+						"select uid, username, passwd, nickname, admin from q_user where username = ?;");
 				state.setString(1, this.user.getUsername());
 				rs = state.executeQuery();
 
 				if (rs.next()) {
 					this.user.setUid(rs.getLong("uid"));
 					this.user.setNickname(rs.getString("nickname"));
+					this.user.setAdmin(rs.getBoolean("admin"));
 					checkFlag = true;
 				} else {
 					checkFlag = false;
@@ -80,10 +81,11 @@ public class UserDao {
 				addResult = "Username dumplicate!";
 			} else {
 				state = connection.prepareStatement(
-						"insert into q_user (uid, username, passwd, nickname) values (default, ?, ?, ?);");
+						"insert into q_user (uid, username, passwd, nickname, admin) values (default, ?, ?, ?, ?);");
 				state.setString(1, user.getUsername());
 				state.setString(2, user.getPasswd());
 				state.setString(3, user.getNickname());
+				state.setBoolean(4, user.isAdmin());
 				state.executeQuery();
 				
 				// reset uid and other thing;
@@ -148,26 +150,6 @@ public class UserDao {
 				p.setCutoff_time(rs.getTimestamp("cutoff_time"));
 				allowedPaper.add(p);
 			}
-
-//			state.setLong(1, user.getUid());
-//			rs = state.executeQuery();
-//			while (rs.next()) {
-//				allowedPaperid.add(rs.getLong("paperid"));
-//			}
-//
-//			state = connection.prepareStatement(
-//					"select q_user.uid, paper_name,  from q_paper where paperid = ?");
-//			for (long x : allowedPaperid) {
-//				state.setLong(1, x);
-//				rs = state.executeQuery();
-//				Paper paper = new Paper();
-//				paper.setPaperid(x);
-//				paper.setPapername(rs.getString("paper_name"));
-//				paper.setOwnerid(rs.getLong("uid"));
-//				paper.setPublish_time(rs.getTimestamp("publish_time"));
-//				paper.setCutoff_time(rs.getTimestamp("cutoff_time"));
-//				allowedPaper.add(paper);
-//			}
 		} catch (SQLException e) {
 			System.out.println("Unknown SQLException!");
 			e.printStackTrace();
@@ -182,6 +164,7 @@ public class UserDao {
 		u.setPasswd("feng");
 		u.setUsername("leafee");
 		u.setNickname("Leafee");
+		u.setAdmin(true);
 		UserDao ud = new UserDao();
 		String msg;
 		if ((msg = ud.addUser(u)) == null) {
