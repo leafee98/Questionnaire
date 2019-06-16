@@ -12,23 +12,40 @@ public class PaperDao {
 	private Paper paper;
 	private Connection connection;
 	
+	/*
+	 * init the PaperDao, init the paper inside PaperDao with everythin default
+	 */
 	public PaperDao() {
 		this.connection = Conn.getConnection();
+		paper = new Paper();
 	}
 	
+	/*
+	 * init the PaperDao, init the paper inside PaperDao with the paper
+	 * passed in as parameter
+	 */
 	public PaperDao(Paper p) {
 		this();
 		this.setPaper(p);
 	}
 	
+	/*
+	 * get the paper inside the PaperDao
+	 */
 	public Paper getPaper() {
 		return this.paper;
 	}
 	
+	/*
+	 * set the paper inside the PaperDao to the paper passed in.
+	 */
 	public Paper setPaper(Paper paper) {
 		return this.paper = paper;
 	}
 
+	/*
+	 * set the paper inside the PaperDao, using parameter paperid to get paper from database
+	 */
 	public Paper setPaper(long paperid) {
 		PreparedStatement state = null;
 		ResultSet rs = null;
@@ -51,6 +68,10 @@ public class PaperDao {
 		return this.paper;
 	}
 	
+	/*
+	 * add a new paper to database, after adding, the paper inside the PaperDao
+	 * will be set to the paper passed in as parameter
+	 */
 	public void addPaper(Paper paper) {
 		PreparedStatement state = null;
 		ResultSet rs = null;
@@ -61,7 +82,7 @@ public class PaperDao {
 			state.setString(2, paper.getPapername());
 			state.setTimestamp(3, paper.getPublish_time());
 			state.setTimestamp(4, paper.getCutoff_time());
-			state.executeQuery();
+			state.executeUpdate();
 			
 			state = connection.prepareStatement(
 					"select paperid from q_paper where uid = ? and paper_name = ? and publish_time = ? and cutoff_time = ?");
@@ -76,14 +97,46 @@ public class PaperDao {
 		} catch (SQLException e) {
 			System.out.println("Unknown SQLException!");
 			e.printStackTrace();
-			System.exit(-5);
 		}
 	}
 	
+	/*
+	 * add paper to database, using the paper inside the PaperDao
+	 */
 	public void addPaper() {
 		this.addPaper(this.paper);
 	}
 	
+	/*
+	 * you can update new uid, which mean give the owner ship to another user,
+	 * paper name, publish_time and cutoff_time of the Paper
+	 */
+	public boolean updatePaper() {
+		PreparedStatement state = null;
+		int result = 0;
+		try {
+			state = connection.prepareStatement(
+					"update q_paper set uid = ?, paper_name = ?, publish_time = ?, curoff_time = ? where paperid = ?;");
+			state.setLong(1, paper.getOwnerid());
+			state.setString(2, paper.getPapername());
+			state.setTimestamp(3, paper.getPublish_time());
+			state.setTimestamp(4, paper.getCutoff_time());
+			state.setLong(5,  paper.getPaperid());
+			result = state.executeUpdate();
+		} catch (SQLException e) {
+			result = 0;
+			e.printStackTrace();
+		}
+		if (result == 0) {
+			return false;
+		} else {
+			return true;
+		}
+	}
+	
+	/*
+	 * get all queston belong to the paper inside the PaperDao
+	 */
 	public ArrayList<Question> getQuestion() {
 		ArrayList<Question> questions = new ArrayList<Question>();
 		ResultSet rs = null;
@@ -109,6 +162,9 @@ public class PaperDao {
 		return questions;
 	}
 	
+	/*
+	 * allow a user to do the paper inside the PaperDao
+	 */
 	public boolean addAllowUser(Long uid) {
 		PreparedStatement state = null;
 		boolean addFlag = true;
@@ -128,6 +184,9 @@ public class PaperDao {
 		return addFlag;
 	}
 	
+	/*
+	 * get all user allowed to do the paper inside the PaperDao
+	 */
 	public ArrayList<User> getAllowedUser() {
 		ArrayList<User> allowedUser = new ArrayList<User>();
 		PreparedStatement state = null;

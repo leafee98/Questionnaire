@@ -1,93 +1,87 @@
-drop database if exists questionnaire;
-create database questionnaire;
-use questionnaire;
-
-create table q_user (
-	uid int primary key auto_increment,
-	username char(30) not null unique,
-	passwd char(32) not null,
-	nickname nchar(100) not null,
-	admin bool not null,
+DROP DATABASE IF EXISTS questionnaire;
+CREATE DATABASE questionnaire; USE questionnaire;
+CREATE TABLE q_user (
+	uid INT PRIMARY KEY AUTO_INCREMENT,
+	username CHAR(30) NOT NULL UNIQUE,
+	passwd CHAR(32) NOT NULL,
+	nickname nchar(100) NOT NULL,
+	admin BOOL NOT NULL
 );
-
-create table q_paper (
-	paperid int primary key auto_increment,
-	uid int,
-	paper_name nchar(100) not null unique,
-	publish_time datetime not null default NOW(),
-	cutoff_time datetime not null default adddate(NOW(), 3),
+CREATE TABLE q_paper (
+	paperid INT PRIMARY KEY AUTO_INCREMENT,
+	uid INT,
+	paper_name nchar(100) NOT NULL UNIQUE,
+	publish_time DATETIME NOT NULL DEFAULT NOW(),
+	cutoff_time DATETIME NOT NULL DEFAULT ADDDATE(NOW(), 3),
 	
-	constraint reference_of_ownerid
-		foreign key(uid) references q_user(uid),
-	constraint unique_paper_name_per_user
-		unique (uid, paper_name)
+	CONSTRAINT reference_of_ownerid FOREIGN KEY(uid) REFERENCES q_user(uid),
+	CONSTRAINT unique_paper_name_per_user UNIQUE (uid, paper_name)
 );
-
-create table q_question (
-	questionid int primary key auto_increment,
-	paperid int,
-	question_type char(10) not null,
-	question nvarchar(1000) not null,
+CREATE TABLE q_question (
+	questionid INT PRIMARY KEY AUTO_INCREMENT,
+	paperid INT,
+	question_type CHAR(10) NOT NULL,
+	question nvarchar(1000) NOT NULL,
 	
-	constraint refenence_of_paperid
-		foreign key (paperid) references q_paper(paperid),
-	constraint almost_unique_question_per_paper
-		unique (paperid, question_type, question)
+	CONSTRAINT refenence_of_paperid FOREIGN KEY (paperid) REFERENCES q_paper(paperid),
+	CONSTRAINT almost_unique_question_per_paper UNIQUE (paperid, question_type, question)
 );
-
-create table q_selection (
-	selectionid int primary key auto_increment,
-	questionid int,
-	selection_describe text not null,
+CREATE TABLE q_selection (
+	selectionid INT PRIMARY KEY AUTO_INCREMENT,
+	questionid INT,
+	selection_describe TEXT NOT NULL,
 	
-	constraint reference_of_questionid
-		foreign key (questionid) references q_question(questionid)
+	CONSTRAINT reference_of_questionid FOREIGN KEY (questionid) REFERENCES q_question(questionid)
 );
-
-create table q_answer (
-	answerid int primary key auto_increment,
-	questionid int,
-	answer text not null,
-	respondent int,
+CREATE TABLE q_answer (
+	answerid INT PRIMARY KEY AUTO_INCREMENT,
+	questionid INT,
+	answer TEXT NOT NULL,
+	respondent INT,
 	
-	constraint references_of_questionid
-		foreign key (questionid) references q_question(questionid),
-	constraint references_of_respondent
-		foreign key (respondent) references q_user(uid)
+	CONSTRAINT references_of_questionid FOREIGN KEY (questionid) REFERENCES q_question(questionid),
+	CONSTRAINT references_of_respondent FOREIGN KEY (respondent) REFERENCES q_user(uid)
 );
-
-create table q_allow_answer (
-	paperid int not null,
-	uid int not null,
+CREATE TABLE q_allow_answer (
+	paperid INT NOT NULL,
+	uid INT NOT NULL,
 	
-	constraint reference_of_destination_paperid
-		foreign key (paperid) references q_paper(paperid),
-	constraint reference_of_user_who_allow
-		foreign key (uid) references q_user(uid),
-	constraint primarykey_q_allow_answer
-		primary key (paperid, uid)
+	CONSTRAINT reference_of_destination_paperid FOREIGN KEY (paperid) REFERENCES q_paper(paperid),
+	CONSTRAINT reference_of_user_who_allow FOREIGN KEY (uid) REFERENCES q_user(uid),
+	CONSTRAINT primarykey_q_allow_answer PRIMARY KEY (paperid, uid)
 );
 
 
 
 delimiter //
-create procedure check_user_passwd(in un char(30), in p char(32))
-begin
-	set @pass = (select passwd from q_user where username = un);
-	if @pass = md5(p) then
-		select 1 as result;
-	else
-		select 0 as result;
-	end if;
-end
+CREATE PROCEDURE check_user_passwd(IN un CHAR(30), IN p CHAR(32))
+BEGIN
+	SET @pass = (SELECT passwd FROM q_user WHERE username = un);
+	IF @pass = MD5(p) THEN
+		SELECT 1 AS result;
+	ELSE
+		SELECT 0 AS result;
+	END IF;
+END
 //
 delimiter ;
 
 
 delimiter //
-create trigger encry_passwd before insert on q_user for each row
-begin
-	set new.passwd = md5(new.passwd);
-end
+CREATE TRIGGER encry_passwd BEFORE INSERT 
+	ON q_user FOR EACH ROW
+BEGIN
+	SET new.passwd = MD5(new.passwd);
+END
+//
+delimiter ;
+
+
+delimiter //
+CREATE TRIGGER encry_passwd_on_update AFTER UPDATE
+	ON q_user FOR EACH ROW
+BEGIN
+	SET new.passwd = MD5(new.passwd);
+END
 //
 delimiter ;

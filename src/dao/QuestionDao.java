@@ -12,23 +12,40 @@ public class QuestionDao {
 	private Question question;
 	private Connection connection;
 	
+	/*
+	 * init the QuestionDao, with initializing the question inside it with all value default
+	 */
 	public QuestionDao() {
 		this.connection = Conn.getConnection();
+		this.question = new Question();
 	}
 	
+	/*
+	 * init the QuestionDao, with initializeing the question inside it with @parameter q
+	 */
 	public QuestionDao(Question q) {
 		this();
 		this.setQuestion(q);
 	}
 	
+	/*
+	 * get the question inside the QuestionDao
+	 */
 	public Question getQuestion() {
 		return this.question;
 	}
 	
+	/*
+	 * set the question inside the QuestionDao to @parameter quetion
+	 */
 	public Question setQuestion(Question question) {
 		return this.question = question;
 	}
 	
+	/*
+	 * set the question inside the QuestionDao to question found from
+	 * database by @parameter questionid 
+	 */
 	public Question setQuestion(Long questionid) {
 		PreparedStatement state = null;
 		ResultSet rs = null;
@@ -48,9 +65,17 @@ public class QuestionDao {
 		return this.question;
 	}
 	
-	public void addQuestion(Question question) {
+	/*
+	 * add a new question to database, the specified questionid property of question
+	 * will be ignored, after adding, the question inside the QuestionDao will be set
+	 * to @parameter question, with accurate questionid in database;
+	 * take care that you can not add two question be same on question content and queston_type
+	 * under the same paper;
+	 */
+	public boolean addQuestion(Question question) {
 		PreparedStatement state = null;
 		ResultSet rs = null;
+		int result = 0;
 		try {
 			state = connection.prepareStatement(
 					"insert into q_question (questionid, paperid, question_type, question) values (?, ?, ?, ?);");
@@ -58,7 +83,10 @@ public class QuestionDao {
 			state.setLong(2, question.getPaperid());
 			state.setString(3, question.getType());
 			state.setString(4, question.getQuestion());
-			state.executeQuery();
+			result = state.executeUpdate();
+			if (result == 0) {
+				return false;
+			}
 			
 			// get the question id from database;
 			state = connection.prepareStatement(
@@ -70,16 +98,49 @@ public class QuestionDao {
 
 			rs.next();
 			question.setQuestionid(rs.getLong("questionid"));
+			this.question = question;
 		} catch (Exception e) {
 			e.printStackTrace();
 			System.exit(-7);
 		}
+		return true;
 	}
 	
-	public void addQuestion() {
-		this.addQuestion(this.question);
+	/*
+	 * add a new question to database, using the question inside the QuestionDao
+	 */
+	public boolean addQuestion() {
+		return this.addQuestion(this.question);
 	}
 	
+	/*
+	 * you can update the question_type and the question content,
+	 * do not change anything else;
+	 */
+	public boolean updateQuestion() {
+		PreparedStatement state = null;
+		int result = 0;
+		try {
+			state = connection.prepareStatement(
+					"update q_question set question_type = ?, question = ? where questionid = ?;");
+			state.setString(1, question.getType());
+			state.setString(2, question.getQuestion());
+			state.setLong(3, question.getQuestionid());
+			result = state.executeUpdate();
+		} catch (SQLException e) {
+			result = 0;
+			e.printStackTrace();
+		}
+		if (result == 0) {
+			return false;
+		} else {
+			return true;
+		}
+	}
+	
+	/*
+	 * get all answers belong to this question.
+	 */
 	public ArrayList<Answer> getAllAnswers() {
 		ArrayList<Answer> answers = new ArrayList<Answer>();
 		ResultSet rs = null;
@@ -105,6 +166,10 @@ public class QuestionDao {
 		return answers;
 	}
 	
+	/*
+	 * get the specific answers belong to the question inside QuestionDao,
+	 * means you can get the specific user's answer. 
+	 */
 	public ArrayList<Answer> getSpecificAnswers(Long respondentId) {
 		ArrayList<Answer> answers = new ArrayList<Answer>();
 		ResultSet rs = null;
@@ -131,6 +196,10 @@ public class QuestionDao {
 		return answers;
 	}
 	
+	/*
+	 * get all selection for this question,
+	 * take care you should not use this function if this question with a random text answer.
+	 */
 	public ArrayList<Selection> getSelection() {
 		ArrayList<Selection> selections = new ArrayList<Selection>();
 		ResultSet rs = null;
@@ -155,6 +224,9 @@ public class QuestionDao {
 		return selections;	
 	}
 	
+	/*
+	 * add a selection to the question inside the QuestionDao
+	 */
 	public boolean addSelection(Selection selection) {
 		PreparedStatement state = null;
 		boolean addFlag = true;
@@ -174,6 +246,10 @@ public class QuestionDao {
 		return addFlag;
 	}
 	
+	/*
+	 * add a selection to the question inside the QuestionDao,
+	 * you can just pass a String as parameter
+	 */
 	public boolean addSelection(String selectionDesc) {
 		PreparedStatement state = null;
 		boolean addFlag = true;
@@ -193,6 +269,33 @@ public class QuestionDao {
 		return addFlag;
 	}
 	
+	/*
+	 * update the selection with the same selectionid with @parameter selection
+	 */
+	public boolean updateSelection(Selection selection) {
+		PreparedStatement state = null;
+		int result = 0;
+		try {
+			state = connection.prepareStatement(
+					"update q_selection set selection_describe = ?, questionid = ? where selectionid = ?;");
+			state.setString(1, selection.getSelection_describe());
+			state.setLong(2, selection.getSelectionid());
+			state.setLong(3, selection.getSelectionid());
+			result = state.executeUpdate();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		if (result == 0) {
+			return false;
+		} else {
+			return true;
+		}
+	}
+	
+	/*
+	 * answer the question, add an answer to database,
+	 * the property answerid will be ignored
+	 */
 	public boolean addAnswer(Answer ans) {
 		PreparedStatement state = null;
 		boolean addFlag = true;
@@ -213,6 +316,11 @@ public class QuestionDao {
 		return addFlag;
 	}
 	
+	/*
+	 * answer the question, add an answer to database,
+	 * you can just pass answer content and the uid of the user 
+	 * who did this answer.
+	 */
 	public boolean addAnswer(String answerContent, Long respondentId) {
 		PreparedStatement state = null;
 		boolean addFlag = true;
