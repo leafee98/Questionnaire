@@ -26,14 +26,14 @@ public class UserDao {
 		this.user = new User();
 	}
 	
-//	/*
-//	 * init the UserDao class, and init a user with User passed in;
-//	 */
-//	public UserDao(User u) { 
-//		if (connection == null)
-//			connection = Conn.getConnection();
-//		this.setUser(u);
-//	}
+	/*
+	 * init the UserDao class, and init a user with User passed in;
+	 */
+	public UserDao(User u) { 
+		if (connection == null)
+			connection = Conn.getConnection();
+		this.setUser(u);
+	}
 
 	/*
 	 * init the UserDao, using uid to init the user inside;
@@ -62,12 +62,12 @@ public class UserDao {
 		return this.user;
 	}
 	
-//	/*
-//	 * set a new user to UserDao
-//	 */
-//	public void setUser(User u) {
-//		this.user = u;
-//	}
+	/*
+	 * set a new user to UserDao
+	 */
+	public void setUser(User u) {
+		this.user = u;
+	}
 	
 	/*
 	 * set a new user with username, the user inside will be blank if failed.
@@ -360,7 +360,7 @@ public class UserDao {
 		try {
 			state = connection.prepareStatement(
 					"select q_paper.paperid as paperid, q_paper.uid as uid, paper_name, publish_time, cutoff_time " +
-					"from q_paper join q_allow_answer on q_paper.uid = q_allow_answer.uid " +
+					"from q_paper join q_allow_answer on q_paper.paperid = q_allow_answer.paperid " +
 					"where q_allow_answer.uid = ? and NOW() between publish_time and cutoff_time;");
 			state.setLong(1, user.getUid());
 			rs = state.executeQuery();
@@ -387,10 +387,11 @@ public class UserDao {
 		
 		// test all the methods in UserDao
 		UserDao ud1 = new UserDao();
-		ud1.addUser("add_user1", "test", "add_user1", false);
-		ud1.getUser().setNickname("add_user1_after_update");
-		ud1.getUser().setAdmin(true);
-		ud1.updateUser();
+		ud1.setUser(1);
+		// ud1.addUser("add_user1", "test", "add_user1", false);
+		// ud1.getUser().setNickname("add_user1_after_update");
+		// ud1.getUser().setAdmin(true);
+		// ud1.updateUser();
 		
 		PaperDao pd1 = new PaperDao();
 		pd1.addPaper(ud1.getUser().getUid(), "added_paper_to_added_user1",

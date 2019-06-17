@@ -29,14 +29,14 @@ public class PaperDao {
 		this.setPaper(paperid);
 	}
 	
-//	/*
-//	 * init the PaperDao, init the paper inside PaperDao with the paper
-//	 * passed in as parameter
-//	 */
-//	public PaperDao(Paper p) {
-//		this();
-//		this.setPaper(p);
-//	}
+	/*
+	 * init the PaperDao, init the paper inside PaperDao with the paper
+	 * passed in as parameter
+	 */
+	public PaperDao(Paper p) {
+		this();
+		this.setPaper(p);
+	}
 	
 	/*
 	 * get the paper inside the PaperDao
@@ -45,12 +45,12 @@ public class PaperDao {
 		return this.paper;
 	}
 	
-//	/*
-//	 * set the paper inside the PaperDao to the paper passed in.
-//	 */
-//	public Paper setPaper(Paper paper) {
-//		return this.paper = paper;
-//	}
+	/*
+	 * set the paper inside the PaperDao to the paper passed in.
+	 */
+	public Paper setPaper(Paper paper) {
+		return this.paper = paper;
+	}
 
 	/*
 	 * set the paper inside the PaperDao, using parameter paperid to get paper from database

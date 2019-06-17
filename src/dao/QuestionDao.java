@@ -30,13 +30,13 @@ public class QuestionDao {
 		this.setQuestion(questionid);
 	}
 	
-//	/*
-//	 * init the QuestionDao, with initializeing the question inside it with @parameter q
-//	 */
-//	public QuestionDao(Question q) {
-//		this();
-//		this.setQuestion(q);
-//	}
+	/*
+	 * init the QuestionDao, with initializeing the question inside it with @parameter q
+	 */
+	public QuestionDao(Question q) {
+		this();
+		this.setQuestion(q);
+	}
 	
 	/*
 	 * get the question inside the QuestionDao
@@ -45,12 +45,12 @@ public class QuestionDao {
 		return this.question;
 	}
 	
-//	/*
-//	 * set the question inside the QuestionDao to @parameter quetion
-//	 */
-//	public Question setQuestion(Question question) {
-//		return this.question = question;
-//	}
+	/*
+	 * set the question inside the QuestionDao to @parameter quetion
+	 */
+	public Question setQuestion(Question question) {
+		return this.question = question;
+	}
 	
 	/*
 	 * set the question inside the QuestionDao to question found from
