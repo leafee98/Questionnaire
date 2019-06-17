@@ -7,7 +7,11 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Scanner;
+import java.util.TreeMap;
 
 public class UserDao {
 	private User user;
@@ -37,6 +41,7 @@ public class UserDao {
 	public UserDao(Long uid) {
 		if (connection == null)
 			connection = Conn.getConnection();
+		this.user = new User();
 		this.setUser(uid);
 	}
 	
@@ -46,6 +51,7 @@ public class UserDao {
 	public UserDao(String username) {
 		if (connection == null)
 			connection = Conn.getConnection();
+		this.user = new User();
 		this.setUser(username);
 	}
 	
@@ -63,6 +69,9 @@ public class UserDao {
 //		this.user = u;
 //	}
 	
+	/*
+	 * set a new user with username, the user inside will be blank if failed.
+	 */
 	public boolean setUser(String username) {
 		PreparedStatement state = null;
 		ResultSet rs = null;
@@ -286,19 +295,19 @@ public class UserDao {
 		return result != 0;
 	}
 	
-	public ArrayList<Paper> getAllPapers() {
+	public static ArrayList<Paper> getAllPapers() {
 		ArrayList<Paper> allPapers = new ArrayList<Paper>();
 		PreparedStatement state = null;
 		ResultSet rs = null;
 		try {
 			state = connection.prepareStatement(
-					"select paperid, paper_name, publish_time, cutoff_time from q_paper;");
+					"select paperid, uid, paper_name, publish_time, cutoff_time from q_paper;");
 			rs = state.executeQuery();
 			while (rs.next()) {
 				Paper paper = new Paper();
 				paper.setPaperid(rs.getLong("paperid"));
 				paper.setPapername(rs.getString("paper_name"));
-				paper.setOwnerid(user.getUid());
+				paper.setOwnerid(rs.getLong("uid"));
 				paper.setPublish_time(rs.getTimestamp("publish_time"));
 				paper.setCutoff_time(rs.getTimestamp("cutoff_time"));
 				allPapers.add(paper);
@@ -350,15 +359,15 @@ public class UserDao {
 		ResultSet rs = null;
 		try {
 			state = connection.prepareStatement(
-					"select q_paper.paperid as paperid, paper_name, publish_time, cutoff_time " +
-					"from q_paper join q_user on q_paper.uid = q_user.uid " +
-					"where q_user.uid = ? and NOW() between publish_time and cutoff_time;");
+					"select q_paper.paperid as paperid, q_paper.uid as uid, paper_name, publish_time, cutoff_time " +
+					"from q_paper join q_allow_answer on q_paper.uid = q_allow_answer.uid " +
+					"where q_allow_answer.uid = ? and NOW() between publish_time and cutoff_time;");
 			state.setLong(1, user.getUid());
 			rs = state.executeQuery();
 			while (rs.next()) {
 				Paper p = new Paper();
 				p.setPaperid(rs.getLong("paperid"));
-				p.setOwnerid(user.getUid());
+				p.setOwnerid(rs.getLong("uid"));
 				p.setPapername(rs.getString("paper_name"));
 				p.setPublish_time(rs.getTimestamp("publish_time"));
 				p.setCutoff_time(rs.getTimestamp("cutoff_time"));
@@ -387,16 +396,20 @@ public class UserDao {
 		pd1.addPaper(ud1.getUser().getUid(), "added_paper_to_added_user1",
 				java.sql.Timestamp.valueOf("2019-06-01 00:00:00"),
 				java.sql.Timestamp.valueOf("2019-06-20 00:00:00"));
+		pd1.getPaper().setPapername("updated_paper_to_added_user1");
+		pd1.updatePaper();
 		pd1.addAllowUser(new UserDao("leafee").getUser().getUid());
 		QuestionDao qd1 = new QuestionDao();
 		QuestionDao qd2 = new QuestionDao();
 		
 		qd1.addQuestion(pd1.getPaper().getPaperid(), "radio", "added_question_radio_to_added_paper1");
-		qd2.addQuestion(pd1.getPaper().getPaperid(), "check", "added_question_check_to_added_paper1");
+		qd2.addQuestion(pd1.getPaper().getPaperid(), "check", "added_question_check_to_added_paper2");
 		qd1.addSelection("selection11_of_question1");
 		qd1.addSelection("selection12_of_question1");
-		qd2.addSelection("selection21_of_question1");
-		qd2.addSelection("selection22_of_question1");
+		qd2.addSelection("selection21_of_question2");
+		qd2.addSelection("selection22_of_question2");
+		qd1.getQuestion().setQuestion("updated_question_radio_to_added_paper1");
+		qd1.updateQuestion();
 		
 		ArrayList<Selection> selOfq1 = qd1.getSelection();
 		ArrayList<Selection> selOfq2 = qd2.getSelection();
@@ -404,8 +417,70 @@ public class UserDao {
 		qd2.addAnswer(String.valueOf(selOfq2.get(0).getSelectionid()), new UserDao("leafee").getUser().getUid());
 		qd2.addAnswer(String.valueOf(selOfq2.get(1).getSelectionid()), new UserDao("leafee").getUser().getUid());
 
-		
+		ArrayList<Paper> arrPaper = ud1.getOwnPapers();
+		for (int i = 0; i < arrPaper.size(); ++i) {
+			System.out.println(arrPaper.get(i).getPapername());
+		}
+		System.out.println("============");
+		arrPaper = ud1.getAllowedPaper();
+		for (int i = 0; i < arrPaper.size(); ++i) {
+			System.out.println(arrPaper.get(i).getPapername());
+		}
+		System.out.println("============");
+		arrPaper = UserDao.getAllPapers();
+		for (int i = 0; i < arrPaper.size(); ++i) {
+			System.out.println(arrPaper.get(i).getPapername());
+		}
+		System.out.println("============");
+		System.out.println("============");
+		System.out.println("============");
 
+		for (User u : pd1.getAllowedUser()) {
+			System.out.println(u.getNickname());
+		}
+		System.out.println("============");
+		
+		for (Paper p : arrPaper) {
+			for (Question q : new PaperDao(p.getPaperid()).getQuestion()) {
+				System.out.println(q.getQuestion());
+				QuestionDao qdd = new QuestionDao(q.getQuestionid());
+				// for (Selection s : qdd.getSelection()) {
+				// 	System.out.println(s.getSelection_describe());
+				// }
+				// for (Answer a : qdd.getAllAnswers()) {
+				// 	System.out.println(a.getAnswer());
+				// }
+				TreeMap<Selection, ArrayList<Answer>> qatm = qdd.analyzeSelection();
+				Iterator<Entry<Selection, ArrayList<Answer>>> it = qatm.entrySet().iterator();
+				while (it.hasNext()) {
+					Map.Entry<Selection, ArrayList<Answer>> mapIt = it.next();
+					System.out.print(mapIt.getKey().getSelection_describe() + " ::: ");
+					System.out.println(mapIt.getValue().size());
+				}
+				
+				ArrayList<Answer> speAns = qdd.getSpecificAnswers(new UserDao("leafee").getUser().getUid());
+				System.out.println("The User " + ud1.getUser().getNickname() + " 's Answer:");
+				for (Answer a : speAns) {
+					System.out.println(a.getAnswer());
+				}
+					
+			}
+		}
+		System.out.println("=============");
+
+		for (Paper p : arrPaper) {
+			for (Question q : new PaperDao(p.getPaperid()).getQuestion()) {
+				QuestionDao qdd = new QuestionDao(q.getQuestionid());
+				Selection s = qdd.getSelection().get(0);
+				System.out.println(s.getSelection_describe());
+				QuestionDao.updateSelection(s.getSelectionid(), "Updated Selection");
+				QuestionDao.deleteSelection(s.getSelectionid());
+				break;
+			}
+			break;
+		}
+		QuestionDao.deleteQuestion(qd1.getQuestion().getQuestionid());
+		PaperDao.deletePaper(pd1.getPaper().getPaperid());
 		ud1.deleteUser("add_user1");
 		input.close();
 	}

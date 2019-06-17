@@ -11,14 +11,22 @@ import java.util.ArrayList;
 
 public class PaperDao {
 	private Paper paper;
-	private Connection connection;
+	private static Connection connection;
 	
 	/*
 	 * init the PaperDao, init the paper inside PaperDao with everythin default
 	 */
 	public PaperDao() {
-		this.connection = Conn.getConnection();
+		if (connection == null)
+			connection = Conn.getConnection();
 		paper = new Paper();
+	}
+	
+	public PaperDao(Long paperid) {
+		if (connection == null)
+			connection = Conn.getConnection();
+		paper = new Paper();
+		this.setPaper(paperid);
 	}
 	
 //	/*
@@ -51,13 +59,13 @@ public class PaperDao {
 		PreparedStatement state = null;
 		ResultSet rs = null;
 		try {
-			state = connection.prepareStatement("select paperid, paper_name from q_paper where paperid = ?");
+			state = connection.prepareStatement("select paperid, uid, paper_name from q_paper where paperid = ?");
 			state.setLong(1, paperid);
 			rs = state.executeQuery();
 			if (rs.next()) {
 				paper.setPaperid(rs.getLong("paperid"));
 				paper.setOwnerid(rs.getLong("uid"));
-				paper.setPapername(rs.getString("papername"));
+				paper.setPapername(rs.getString("paper_name"));
 			} else {
 				paper = null;
 			}
@@ -163,7 +171,7 @@ public class PaperDao {
 		int result = 0;
 		try {
 			state = connection.prepareStatement(
-					"update q_paper set uid = ?, paper_name = ?, publish_time = ?, curoff_time = ? where paperid = ?;");
+					"update q_paper set uid = ?, paper_name = ?, publish_time = ?, cutoff_time = ? where paperid = ?;");
 			state.setLong(1, paper.getOwnerid());
 			state.setString(2, paper.getPapername());
 			state.setTimestamp(3, paper.getPublish_time());
@@ -184,7 +192,7 @@ public class PaperDao {
 	/*
 	 * delete paper specific by paperid
 	 */
-	public boolean deletePaper(Long paperid) {
+	public static boolean deletePaper(Long paperid) {
 		PreparedStatement state = null;
 		int result = 0;
 		try {

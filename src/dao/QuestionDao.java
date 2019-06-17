@@ -7,17 +7,27 @@ import java.sql.SQLException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.TreeMap;
 
 public class QuestionDao {
 	private Question question;
-	private Connection connection;
+	private static Connection connection;
 	
 	/*
 	 * init the QuestionDao, with initializing the question inside it with all value default
 	 */
 	public QuestionDao() {
-		this.connection = Conn.getConnection();
-		this.question = new Question();
+		if (connection == null)
+			connection = Conn.getConnection();
+		question = new Question();
+	}
+	
+	public QuestionDao(Long questionid) {
+		if (connection == null)
+			connection = Conn.getConnection();
+		question = new Question();
+		this.setQuestion(questionid);
 	}
 	
 //	/*
@@ -51,13 +61,17 @@ public class QuestionDao {
 		ResultSet rs = null;
 		try {
 			state = connection.prepareStatement(
-					"select questionid, paperid, question_type, question where questionid = ?");
+					"select questionid, paperid, question_type, question from q_question where questionid = ?");
 			state.setLong(1, questionid);
 			rs = state.executeQuery();
-			question.setQuestionid(rs.getLong("questionid"));
-			question.setPaperid(rs.getLong("paperid"));
-			question.setQuestion(rs.getString("question"));
-			question.setType(rs.getString("question_type"));
+			if (rs.next()) {
+				question.setQuestionid(rs.getLong("questionid"));
+				question.setPaperid(rs.getLong("paperid"));
+				question.setQuestion(rs.getString("question"));
+				question.setType(rs.getString("question_type"));
+			} else {
+				question = null;
+			}
 		} catch (SQLException e) {
 			e.printStackTrace();
 			System.exit(-6);
@@ -177,7 +191,7 @@ public class QuestionDao {
 	/*
 	 * delete question specific by quiestionid
 	 */
-	public boolean deleteQuestion(Long questionid) {
+	public static boolean deleteQuestion(Long questionid) {
 		PreparedStatement state = null;
 		int result = 0;
 		try {
@@ -192,6 +206,33 @@ public class QuestionDao {
 		return result != 0;
 	}
 	
+	/*
+	 * answer the question, add an answer to database,
+	 * you can just pass answer content and the uid of the user 
+	 * who did this answer.
+	 */
+	public boolean addAnswer(String answerContent, Long respondentId) {
+		PreparedStatement state = null;
+		boolean addFlag = true;
+		try {
+			state = connection.prepareStatement(
+					"insert into q_answer (questionid, answer, respondent) values (?, ?, ?);");
+			state.setLong(1, question.getQuestionid());
+			state.setString(2, answerContent);
+			state.setLong(3, respondentId);
+			if (state.executeUpdate() == 0) {
+				addFlag = false;
+			}
+		} catch (SQLException e) {
+			addFlag = false;
+
+			System.out.println("Unknown SQLException");
+			e.printStackTrace();
+			System.exit(-12);
+		}
+		return addFlag;
+	}
+
 	/*
 	 * get all answers belong to this question.
 	 */
@@ -248,6 +289,35 @@ public class QuestionDao {
 			System.exit(-8);
 		}
 		return answers;
+	}
+	
+	/*
+	 * you can call this function only when the question is 'radio'(single select) or 
+	 * 'check'(multiple select), if not, the result will be null or undefined.
+	 */
+	public TreeMap<Selection, ArrayList<Answer>> analyzeSelection() {
+		TreeMap<Selection, ArrayList<Answer>> anaResult = 
+				new TreeMap<Selection, ArrayList<Answer>>(new Comparator<Selection>() {
+					public int compare(Selection a, Selection b) {
+						return (int)(a.getSelectionid() - b.getSelectionid());
+					}
+				});
+		ArrayList<Selection> selections = this.getSelection();
+		ArrayList<Answer> answers = this.getAllAnswers();
+		for (int i = 0; i < selections.size(); ++i) {
+			anaResult.put(selections.get(i), new ArrayList<Answer>());
+		}
+		try {
+			for (int i = 0; i < answers.size(); ++i) {
+				anaResult.get(Selection.parseSelection(
+						Long.parseLong(answers.get(i).getAnswer())
+						)).add(answers.get(i));
+			}
+		} catch (NumberFormatException e) {
+			anaResult = null;
+			e.printStackTrace();
+		}
+		return anaResult;
 	}
 	
 	/*
@@ -353,7 +423,7 @@ public class QuestionDao {
 	/*
 	 * update the selection describe
 	 */
-	public boolean updateSelection(Long selectionid, String selectionDescribe) {
+	public static boolean updateSelection(Long selectionid, String selectionDescribe) {
 		PreparedStatement state = null;
 		int result = 0;
 		try {
@@ -372,12 +442,12 @@ public class QuestionDao {
 	/*
 	 * delete the selection specific by selection id
 	 */
-	public boolean deleteSelection(Long selectionid) {
+	public static boolean deleteSelection(Long selectionid) {
 		PreparedStatement state = null;
 		int result = 0;
 		try {
 			state = connection.prepareStatement(
-					"delete q_selection where selectionid = ?;");
+					"delete from q_selection where selectionid = ?;");
 			state.setLong(1, selectionid);
 			result = state.executeUpdate();
 		} catch (SQLException e) {
@@ -412,31 +482,4 @@ public class QuestionDao {
 //		}
 //		return addFlag;
 //	}
-	
-	/*
-	 * answer the question, add an answer to database,
-	 * you can just pass answer content and the uid of the user 
-	 * who did this answer.
-	 */
-	public boolean addAnswer(String answerContent, Long respondentId) {
-		PreparedStatement state = null;
-		boolean addFlag = true;
-		try {
-			state = connection.prepareStatement(
-					"insert into q_answer (questionid, answer, respondent) values (?, ?, ?);");
-			state.setLong(1, question.getQuestionid());
-			state.setString(2, answerContent);
-			state.setLong(3, respondentId);
-			if (state.executeUpdate() == 0) {
-				addFlag = false;
-			}
-		} catch (SQLException e) {
-			addFlag = false;
-
-			System.out.println("Unknown SQLException");
-			e.printStackTrace();
-			System.exit(-12);
-		}
-		return addFlag;
-	}
 }

@@ -13,4 +13,10 @@ public class Selection {
 
 	public String getSelection_describe() { return selection_describe; }
 	public void setSelection_describe(String selection_describe) { this.selection_describe = selection_describe; }
+	
+	public static Selection parseSelection(Long selectionid) {
+		Selection blankSelection = new Selection();
+		blankSelection.setSelectionid(selectionid);
+		return blankSelection;
+	}
 }
