@@ -66,6 +66,80 @@ END
 //
 delimiter ;
 
+delimiter //
+CREATE PROCEDURE delete_question(IN q_id INT)
+BEGIN
+	DELETE FROM q_answer WHERE questionid = q_id;
+	DELETE FROM q_selection WHERE questionid = q_id;
+	DELETE FROM q_question WHERE questionid = q_id;
+END
+//
+delimiter ;
+
+delimiter //
+CREATE PROCEDURE delete_paper(IN p_id INT)
+BEGIN
+	DELETE FROM q_answer WHERE questionid IN (
+		SELECT questionid FROM q_question WHERE paperid = p_id
+	);
+	DELETE FROM q_selection WHERE questionid IN (
+		SELECT questionid FROM q_question WHERE paperid = p_id
+	);
+	DELETE FROM q_question WHERE paperid = p_id;
+	DELETE FROM q_allow_answer WHERE paperid = p_id;
+	DELETE FROM q_paper WHERE paperid = p_id;
+END
+//
+delimiter ;
+
+delimiter //
+CREATE PROCEDURE delete_user(IN un CHAR(30))
+BEGIN
+	SET @uid = (SELECT uid FROM q_user WHERE username = un);
+	
+	DELETE FROM q_answer WHERE questionid IN (
+		SELECT questionid FROM q_question WHERE paperid IN (
+			SELECT paperid FROM q_paper WHERE uid = @uid
+		)
+	);
+	DELETE FROM q_selection WHERE questionid IN (
+		SELECT questionid FROM q_question WHERE paperid IN (
+			SELECT paperid FROM q_paper WHERE uid = @uid
+		)
+	);
+	DELETE FROM q_question WHERE paperid IN (
+			SELECT paperid FROM q_paper WHERE uid = @uid
+	);
+	DELETE FROM q_allow_answer WHERE paperid IN (
+			SELECT paperid FROM q_paper WHERE uid = @uid
+	);
+	DELETE FROM q_paper WHERE paperid IN (
+			SELECT paperid FROM q_paper WHERE uid = @uid
+	);
+	DELETE FROM q_user WHERE uid = @uid;
+END //
+delimiter ;
+/*
+delimiter //
+CREATE PROCEDURE delete_user(IN un CHAR(30))
+BEGIN
+	DECLARE u_uid INT;
+	DECLARE conti INT DEFAULT TRUE;
+	DECLARE current_paperid INT;
+	DECLARE cur_paperid CURSOR FOR SELECT paperid FROM q_paper WHERE uid = u_uid;
+	DECLARE CONTINUE handler FOR NOT FOUND SET @conti = FALSE;
+	SET u_uid = (SELECT uid FROM q_user WHERE username = un);
+	
+	OPEN cur_paperid;
+	WHILE conti = TRUE DO
+		FETCH cur_paperid INTO current_paperid;
+		CALL delete_paper(current_paperid);
+	END WHILE;
+	CLOSE cur_paperid;
+END
+//
+delimiter ;
+*/
 
 delimiter //
 CREATE TRIGGER encry_passwd BEFORE INSERT 
@@ -78,7 +152,7 @@ delimiter ;
 
 
 delimiter //
-CREATE TRIGGER encry_passwd_on_update AFTER UPDATE
+CREATE TRIGGER encry_passwd_on_update BEFORE UPDATE
 	ON q_user FOR EACH ROW
 BEGIN
 	SET new.passwd = MD5(new.passwd);

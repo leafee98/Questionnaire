@@ -6,28 +6,47 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Scanner;
 
 public class UserDao {
 	private User user;
-	private Connection connection;
+	private static Connection connection;
 	
 	/*
 	 * init the UserDao class, and init a blank user inside it.
 	 */
 	public UserDao() {
-		this.connection = Conn.getConnection();
+		if (connection == null)
+			connection = Conn.getConnection();
 		this.user = new User();
 	}
 	
+//	/*
+//	 * init the UserDao class, and init a user with User passed in;
+//	 */
+//	public UserDao(User u) { 
+//		if (connection == null)
+//			connection = Conn.getConnection();
+//		this.setUser(u);
+//	}
+
 	/*
-	 * init the UserDao class, and init a user with User passed in;
+	 * init the UserDao, using uid to init the user inside;
 	 */
-	public UserDao(User u) { 
-		this();
-		this.setUser(u);
+	public UserDao(Long uid) {
+		if (connection == null)
+			connection = Conn.getConnection();
+		this.setUser(uid);
+	}
+	
+	/*
+	 * init the UserDao, using username to init the user inside
+	 */
+	public UserDao(String username) {
+		if (connection == null)
+			connection = Conn.getConnection();
+		this.setUser(username);
 	}
 	
 	/*
@@ -37,11 +56,66 @@ public class UserDao {
 		return this.user;
 	}
 	
+//	/*
+//	 * set a new user to UserDao
+//	 */
+//	public void setUser(User u) {
+//		this.user = u;
+//	}
+	
+	public boolean setUser(String username) {
+		PreparedStatement state = null;
+		ResultSet rs = null;
+		boolean setFlag = false;
+		try {
+			state = connection.prepareStatement(
+					"select uid, username, passwd, nickname, admin from q_user where username = ?;");
+			state.setString(1, username);
+			rs = state.executeQuery();
+
+			if (rs.next()) {
+				this.user.setUid(rs.getLong("uid"));
+				this.user.setUsername(rs.getString("username"));
+				this.user.setNickname(rs.getString("nickname"));
+				this.user.setAdmin(rs.getBoolean("admin"));
+				this.user.setPasswd(rs.getString("passwd"));
+				setFlag = true;
+			} else {
+				setFlag = false;
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return setFlag;
+	}
+	
 	/*
-	 * set a new user to UserDao
+	 * set user by uid
 	 */
-	public void setUser(User u) {
-		this.user = u;
+	public boolean setUser(long uid) {
+		PreparedStatement state = null;
+		ResultSet rs = null;
+		boolean setFlag = false;
+		try {
+			state = connection.prepareStatement(
+					"select uid, username, passwd, nickname, admin from q_user where uid = ?;");
+			state.setLong(1, uid);
+			rs = state.executeQuery();
+
+			if (rs.next()) {
+				this.user.setUid(rs.getLong("uid"));
+				this.user.setUsername(rs.getString("username"));
+				this.user.setNickname(rs.getString("nickname"));
+				this.user.setAdmin(rs.getBoolean("admin"));
+				this.user.setPasswd(rs.getString("passwd"));
+				setFlag = true;
+			} else {
+				setFlag = false;
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return setFlag;
 	}
 	
 	/*
@@ -88,12 +162,56 @@ public class UserDao {
 		return checkFlag;
 	}
 	
+//	/*
+//	 * add a new user to database with the user passed in as parameter;
+//	 * if succeed, the user inside UserDao will be set to the user just added.
+//	 * if failed, the user inside will not change.
+//	 */
+//	public boolean addUser(User user) {
+//		boolean addResult = true;
+//		PreparedStatement test = null;
+//		PreparedStatement state = null;
+//		try {
+//			// if username already exists
+//			test = connection.prepareStatement("select * from q_user where username = ?");
+//			test.setString(1,  user.getUsername());
+//			if (test.executeQuery().next()) {
+//				addResult = false;
+//			} else {
+//				state = connection.prepareStatement(
+//						"insert into q_user (uid, username, passwd, nickname, admin) values (default, ?, ?, ?, ?);");
+//				state.setString(1, user.getUsername());
+//				state.setString(2, user.getPasswd());
+//				state.setString(3, user.getNickname());
+//				state.setBoolean(4, user.isAdmin());
+//				state.executeUpdate();
+//				
+//				// reset uid and other thing;
+//				this.checkUser(user.getUsername(), user.getPasswd());
+//				addResult = true;
+//			}
+//		} catch (SQLException e) {
+//			System.out.println("Unknown SQLException!");
+//			e.printStackTrace();
+//			System.exit(-4);
+//		}
+//		return addResult;
+//	}
+	
 	/*
-	 * add a new user to database with the user passed in as parameter;
+	 * add a new user to database, using the user inside UserDao.
 	 * if succeed, the user inside UserDao will be set to the user just added.
 	 * if failed, the user inside will not change.
 	 */
-	public boolean addUser(User user) {
+	public boolean addUser() {
+		return this.addUser(user.getUsername(), user.getPasswd(), user.getNickname(),
+				user.isAdmin());
+	}
+	
+	/*
+	 * you can just pass username, password, nickname and boolean admin as parameter;
+	 */
+	public boolean addUser(String username, String passwd, String nickname, boolean admin) {
 		boolean addResult = true;
 		PreparedStatement test = null;
 		PreparedStatement state = null;
@@ -106,14 +224,14 @@ public class UserDao {
 			} else {
 				state = connection.prepareStatement(
 						"insert into q_user (uid, username, passwd, nickname, admin) values (default, ?, ?, ?, ?);");
-				state.setString(1, user.getUsername());
-				state.setString(2, user.getPasswd());
-				state.setString(3, user.getNickname());
-				state.setBoolean(4, user.isAdmin());
+				state.setString(1, username);
+				state.setString(2, passwd);
+				state.setString(3, nickname);
+				state.setBoolean(4, admin);
 				state.executeUpdate();
 				
 				// reset uid and other thing;
-				this.checkUser(user.getUsername(), user.getPasswd());
+				this.checkUser(username, passwd);
 				addResult = true;
 			}
 		} catch (SQLException e) {
@@ -122,27 +240,6 @@ public class UserDao {
 			System.exit(-4);
 		}
 		return addResult;
-	}
-	
-	/*
-	 * add a new user to database, using the user inside UserDao.
-	 * if succeed, the user inside UserDao will be set to the user just added.
-	 * if failed, the user inside will not change.
-	 */
-	public boolean addUser() {
-		return this.addUser(this.user);
-	}
-	
-	/*
-	 * you can just pass username, password, nickname and boolean admin as parameter;
-	 */
-	public boolean addUser(String username, String passwd, String nickname, boolean admin) {
-		User u = new User();
-		u.setUsername(username);
-		u.setPasswd(passwd);
-		u.setNickname(nickname);
-		u.setAdmin(admin);
-		return this.addUser(u);
 	}
 	
 	/*
@@ -169,6 +266,49 @@ public class UserDao {
 		} else {
 			return true;
 		}
+	}
+	
+	/*
+	 * delete the user specific by username in database;
+	 */
+	public boolean deleteUser(String username) {
+		PreparedStatement state = null;
+		int result = 0;
+		try {
+			state = connection.prepareStatement(
+					"call delete_user(?);");
+			state.setString(1, username);
+			result = state.executeUpdate();
+		} catch (SQLException e) {
+			result = 0;
+			e.printStackTrace();
+		}
+		return result != 0;
+	}
+	
+	public ArrayList<Paper> getAllPapers() {
+		ArrayList<Paper> allPapers = new ArrayList<Paper>();
+		PreparedStatement state = null;
+		ResultSet rs = null;
+		try {
+			state = connection.prepareStatement(
+					"select paperid, paper_name, publish_time, cutoff_time from q_paper;");
+			rs = state.executeQuery();
+			while (rs.next()) {
+				Paper paper = new Paper();
+				paper.setPaperid(rs.getLong("paperid"));
+				paper.setPapername(rs.getString("paper_name"));
+				paper.setOwnerid(user.getUid());
+				paper.setPublish_time(rs.getTimestamp("publish_time"));
+				paper.setCutoff_time(rs.getTimestamp("cutoff_time"));
+				allPapers.add(paper);
+			}
+		} catch (SQLException e) {
+			System.out.println("Unknown SQLException!");
+			e.printStackTrace();
+			System.exit(-1);
+		}
+		return allPapers;
 	}
 	
 	/*
@@ -235,76 +375,38 @@ public class UserDao {
 	
 	public static void main(String[] args) {
 		Scanner input = new Scanner(System.in);
+		
+		// test all the methods in UserDao
+		UserDao ud1 = new UserDao();
+		ud1.addUser("add_user1", "test", "add_user1", false);
+		ud1.getUser().setNickname("add_user1_after_update");
+		ud1.getUser().setAdmin(true);
+		ud1.updateUser();
+		
+		PaperDao pd1 = new PaperDao();
+		pd1.addPaper(ud1.getUser().getUid(), "added_paper_to_added_user1",
+				java.sql.Timestamp.valueOf("2019-06-01 00:00:00"),
+				java.sql.Timestamp.valueOf("2019-06-20 00:00:00"));
+		pd1.addAllowUser(new UserDao("leafee").getUser().getUid());
+		QuestionDao qd1 = new QuestionDao();
+		QuestionDao qd2 = new QuestionDao();
+		
+		qd1.addQuestion(pd1.getPaper().getPaperid(), "radio", "added_question_radio_to_added_paper1");
+		qd2.addQuestion(pd1.getPaper().getPaperid(), "check", "added_question_check_to_added_paper1");
+		qd1.addSelection("selection11_of_question1");
+		qd1.addSelection("selection12_of_question1");
+		qd2.addSelection("selection21_of_question1");
+		qd2.addSelection("selection22_of_question1");
+		
+		ArrayList<Selection> selOfq1 = qd1.getSelection();
+		ArrayList<Selection> selOfq2 = qd2.getSelection();
+		qd1.addAnswer(String.valueOf(selOfq1.get(0).getSelectionid()), new UserDao("leafee").getUser().getUid());
+		qd2.addAnswer(String.valueOf(selOfq2.get(0).getSelectionid()), new UserDao("leafee").getUser().getUid());
+		qd2.addAnswer(String.valueOf(selOfq2.get(1).getSelectionid()), new UserDao("leafee").getUser().getUid());
 
-		User u = new User();
-		u.setPasswd("feng");
-		u.setUsername("leafee1");
-		u.setNickname("Leafee");
-		u.setAdmin(true);
-		UserDao ud = new UserDao();
-		if (ud.addUser(u)) {
-			System.out.println("Succeed!");
-		} else {
-			System.out.println("Error!");
-		}
+		
 
-		System.out.println("created user, before updating user");
-		input.nextInt();;
-		
-		u = ud.getUser();
-		u.setUsername("test_update");
-		u.setPasswd("test_update");
-		u.setNickname("test_update");
-		ud.setUser(u);
-		if (ud.updateUser()) {
-			System.out.println("Update Succeed!");
-		}
-		
-		System.out.println(ud.getUser().getUid());
-		Paper paper = new Paper();
-		paper.setPapername("added paper0");
-		paper.setOwnerid(ud.getUser().getUid());
-		paper.setPublish_time(Timestamp.valueOf("2019-06-01 09:00:00"));
-		paper.setCutoff_time(Timestamp.valueOf("2019-07-01 00:00:00"));
-		PaperDao papd = new PaperDao(paper);
-		papd.addPaper();
-		
-		Question quest = new Question();
-		quest.setPaperid(papd.getPaper().getPaperid());
-		quest.setQuestion("added question");
-		quest.setType("raido");
-		QuestionDao questD = new QuestionDao(quest);
-		questD.addQuestion();
-		
-		Selection selec1 = new Selection();
-		selec1.setQuestionid(questD.getQuestion().getQuestionid());
-		selec1.setSelection_describe("added selection");
-		questD.addSelection(selec1);
-		
-		Answer ans = new Answer();
-		ans.setAnswer("test answer");
-		ans.setQuestionid(questD.getQuestion().getQuestionid());
-		ans.setRespondent(ud.getUser().getUid());
-		questD.addAnswer(ans);
-		
-		questD.addSelection("added selection by string");
-		questD.addAnswer("added answerContent by string", ud.getUser().getUid());
-		
-		papd.addAllowUser(ud.getUser().getUid());
-		
-		System.out.println("======");
-		System.out.println(ud.getAllowedPaper().get(0).getPaperid());
-		System.out.println(ud.getOwnPapers().get(0).getPaperid());
-		
-		System.out.println("========");
-		System.out.println(papd.getQuestion().get(0).getQuestion());
-		System.out.println(papd.getAllowedUser().get(0).getNickname());
-
-		System.out.println("=========");
-		System.out.println(questD.getAllAnswers().get(0).getAnswer());
-		System.out.println(questD.getSpecificAnswers(ud.getUser().getUid()).get(0).getAnswer());
-		System.out.println(questD.getSelection().get(0).getSelection_describe());
-		
+		ud1.deleteUser("add_user1");
 		input.close();
 	}
 }

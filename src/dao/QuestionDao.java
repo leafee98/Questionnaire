@@ -20,13 +20,13 @@ public class QuestionDao {
 		this.question = new Question();
 	}
 	
-	/*
-	 * init the QuestionDao, with initializeing the question inside it with @parameter q
-	 */
-	public QuestionDao(Question q) {
-		this();
-		this.setQuestion(q);
-	}
+//	/*
+//	 * init the QuestionDao, with initializeing the question inside it with @parameter q
+//	 */
+//	public QuestionDao(Question q) {
+//		this();
+//		this.setQuestion(q);
+//	}
 	
 	/*
 	 * get the question inside the QuestionDao
@@ -35,12 +35,12 @@ public class QuestionDao {
 		return this.question;
 	}
 	
-	/*
-	 * set the question inside the QuestionDao to @parameter quetion
-	 */
-	public Question setQuestion(Question question) {
-		return this.question = question;
-	}
+//	/*
+//	 * set the question inside the QuestionDao to @parameter quetion
+//	 */
+//	public Question setQuestion(Question question) {
+//		return this.question = question;
+//	}
 	
 	/*
 	 * set the question inside the QuestionDao to question found from
@@ -65,14 +65,59 @@ public class QuestionDao {
 		return this.question;
 	}
 	
+//	/*
+//	 * add a new question to database, the specified questionid property of question
+//	 * will be ignored, after adding, the question inside the QuestionDao will be set
+//	 * to @parameter question, with accurate questionid in database;
+//	 * take care that you **can not add two question be same on question content and queston_type
+//	 * under the same paper**;
+//	 */
+//	public boolean addQuestion(Question question) {
+//		PreparedStatement state = null;
+//		ResultSet rs = null;
+//		int result = 0;
+//		try {
+//			state = connection.prepareStatement(
+//					"insert into q_question (questionid, paperid, question_type, question) values (?, ?, ?, ?);");
+//			state.setNull(1, java.sql.Types.INTEGER);
+//			state.setLong(2, question.getPaperid());
+//			state.setString(3, question.getType());
+//			state.setString(4, question.getQuestion());
+//			result = state.executeUpdate();
+//			if (result == 0) {
+//				return false;
+//			}
+//			
+//			// get the question id from database;
+//			state = connection.prepareStatement(
+//					"select questionid from q_question where paperid = ? and question_type = ? and question = ?;");
+//			state.setLong(1, question.getPaperid());
+//			state.setString(2, question.getType());
+//			state.setString(3, question.getQuestion());
+//			rs = state.executeQuery();
+//
+//			rs.next();
+//			question.setQuestionid(rs.getLong("questionid"));
+//			this.question = question;
+//		} catch (Exception e) {
+//			e.printStackTrace();
+//			System.exit(-7);
+//		}
+//		return true;
+//	}
+	
 	/*
-	 * add a new question to database, the specified questionid property of question
-	 * will be ignored, after adding, the question inside the QuestionDao will be set
-	 * to @parameter question, with accurate questionid in database;
-	 * take care that you can not add two question be same on question content and queston_type
-	 * under the same paper;
+	 * add a new question to database, using the question inside the QuestionDao
 	 */
-	public boolean addQuestion(Question question) {
+	public boolean addQuestion() {
+		return this.addQuestion(question.getPaperid(), question.getType(),
+				question.getQuestion());
+	}
+	
+	/*
+	 * you can just pass paperid, question type, question content as parameters
+	 */
+	public boolean addQuestion(Long paperid, String questionType, String questionContent) {
 		PreparedStatement state = null;
 		ResultSet rs = null;
 		int result = 0;
@@ -80,9 +125,9 @@ public class QuestionDao {
 			state = connection.prepareStatement(
 					"insert into q_question (questionid, paperid, question_type, question) values (?, ?, ?, ?);");
 			state.setNull(1, java.sql.Types.INTEGER);
-			state.setLong(2, question.getPaperid());
-			state.setString(3, question.getType());
-			state.setString(4, question.getQuestion());
+			state.setLong(2, paperid);
+			state.setString(3, questionType);
+			state.setString(4, questionContent);
 			result = state.executeUpdate();
 			if (result == 0) {
 				return false;
@@ -91,26 +136,21 @@ public class QuestionDao {
 			// get the question id from database;
 			state = connection.prepareStatement(
 					"select questionid from q_question where paperid = ? and question_type = ? and question = ?;");
-			state.setLong(1, question.getPaperid());
-			state.setString(2, question.getType());
-			state.setString(3, question.getQuestion());
+			state.setLong(1, paperid);
+			state.setString(2, questionType);
+			state.setString(3, questionContent);
 			rs = state.executeQuery();
 
 			rs.next();
 			question.setQuestionid(rs.getLong("questionid"));
-			this.question = question;
+			question.setPaperid(paperid);
+			question.setType(questionType);
+			question.setQuestion(questionContent);
 		} catch (Exception e) {
 			e.printStackTrace();
 			System.exit(-7);
 		}
 		return true;
-	}
-	
-	/*
-	 * add a new question to database, using the question inside the QuestionDao
-	 */
-	public boolean addQuestion() {
-		return this.addQuestion(this.question);
 	}
 	
 	/*
@@ -131,11 +171,25 @@ public class QuestionDao {
 			result = 0;
 			e.printStackTrace();
 		}
-		if (result == 0) {
-			return false;
-		} else {
-			return true;
+		return result != 0;
+	}
+	
+	/*
+	 * delete question specific by quiestionid
+	 */
+	public boolean deleteQuestion(Long questionid) {
+		PreparedStatement state = null;
+		int result = 0;
+		try {
+			state = connection.prepareStatement(
+					"call delete_question(?);");
+			state.setLong(1, questionid);
+			result = state.executeUpdate();
+		} catch (SQLException e) {
+			result = 0;
+			e.printStackTrace();
 		}
+		return result != 0;
 	}
 	
 	/*
@@ -224,27 +278,29 @@ public class QuestionDao {
 		return selections;	
 	}
 	
-	/*
-	 * add a selection to the question inside the QuestionDao
-	 */
-	public boolean addSelection(Selection selection) {
-		PreparedStatement state = null;
-		boolean addFlag = true;
-		try {
-			state = connection.prepareStatement(
-					"insert into q_selection (questionid, selection_describe) values (?, ?);");
-			state.setLong(1, selection.getQuestionid());
-			state.setString(2, selection.getSelection_describe());
-			state.executeQuery();
-		} catch (SQLException e) {
-			addFlag = false;
-
-			System.out.println("Unknown SQLException");
-			e.printStackTrace();
-			System.exit(-12);
-		}
-		return addFlag;
-	}
+//	/*
+//	 * add a selection to the question inside the QuestionDao
+//	 */
+//	public boolean addSelection(Selection selection) {
+//		PreparedStatement state = null;
+//		boolean addFlag = true;
+//		try {
+//			state = connection.prepareStatement(
+//					"insert into q_selection (questionid, selection_describe) values (?, ?);");
+//			state.setLong(1, selection.getQuestionid());
+//			state.setString(2, selection.getSelection_describe());
+//			if (state.executeUpdate() == 0) {
+//				addFlag = false;
+//			}
+//		} catch (SQLException e) {
+//			addFlag = false;
+//
+//			System.out.println("Unknown SQLException");
+//			e.printStackTrace();
+//			System.exit(-12);
+//		}
+//		return addFlag;
+//	}
 	
 	/*
 	 * add a selection to the question inside the QuestionDao,
@@ -258,7 +314,9 @@ public class QuestionDao {
 					"insert into q_selection (questionid, selection_describe) values (?, ?);");
 			state.setLong(1, question.getQuestionid());
 			state.setString(2, selectionDesc);
-			state.executeQuery();
+			if (state.executeUpdate() == 0) {
+				addFlag = false;
+			}
 		} catch (SQLException e) {
 			addFlag = false;
 
@@ -269,52 +327,91 @@ public class QuestionDao {
 		return addFlag;
 	}
 	
+//	/*
+//	 * update the selection with the same selectionid with @parameter selection
+//	 */
+//	public boolean updateSelection(Selection selection) {
+//		PreparedStatement state = null;
+//		int result = 0;
+//		try {
+//			state = connection.prepareStatement(
+//					"update q_selection set selection_describe = ?, questionid = ? where selectionid = ?;");
+//			state.setString(1, selection.getSelection_describe());
+//			state.setLong(2, selection.getSelectionid());
+//			state.setLong(3, selection.getSelectionid());
+//			result = state.executeUpdate();
+//		} catch (SQLException e) {
+//			e.printStackTrace();
+//		}
+//		if (result == 0) {
+//			return false;
+//		} else {
+//			return true;
+//		}
+//	}
+	
 	/*
-	 * update the selection with the same selectionid with @parameter selection
+	 * update the selection describe
 	 */
-	public boolean updateSelection(Selection selection) {
+	public boolean updateSelection(Long selectionid, String selectionDescribe) {
 		PreparedStatement state = null;
 		int result = 0;
 		try {
 			state = connection.prepareStatement(
-					"update q_selection set selection_describe = ?, questionid = ? where selectionid = ?;");
-			state.setString(1, selection.getSelection_describe());
-			state.setLong(2, selection.getSelectionid());
-			state.setLong(3, selection.getSelectionid());
+					"update q_selection set selection_describe = ? where selectionid = ?;");
+			state.setString(1, selectionDescribe);
+			state.setLong(2, selectionid);
 			result = state.executeUpdate();
 		} catch (SQLException e) {
+			result = 0;
 			e.printStackTrace();
 		}
-		if (result == 0) {
-			return false;
-		} else {
-			return true;
-		}
+		return result != 0;
 	}
 	
 	/*
-	 * answer the question, add an answer to database,
-	 * the property answerid will be ignored
+	 * delete the selection specific by selection id
 	 */
-	public boolean addAnswer(Answer ans) {
+	public boolean deleteSelection(Long selectionid) {
 		PreparedStatement state = null;
-		boolean addFlag = true;
+		int result = 0;
 		try {
 			state = connection.prepareStatement(
-					"insert into q_answer (questionid, answer, respondent) values (?, ?, ?);");
-			state.setLong(1, ans.getQuestionid());
-			state.setString(2, ans.getAnswer());
-			state.setLong(3, ans.getRespondent());
-			state.executeQuery();
+					"delete q_selection where selectionid = ?;");
+			state.setLong(1, selectionid);
+			result = state.executeUpdate();
 		} catch (SQLException e) {
-			addFlag = false;
-
-			System.out.println("Unknown SQLException");
+			result = 0;
 			e.printStackTrace();
-			System.exit(-12);
 		}
-		return addFlag;
+		return result != 0;
 	}
+	
+//	/*
+//	 * answer the question, add an answer to database,
+//	 * the property answerid will be ignored
+//	 */
+//	public boolean addAnswer(Answer ans) {
+//		PreparedStatement state = null;
+//		boolean addFlag = true;
+//		try {
+//			state = connection.prepareStatement(
+//					"insert into q_answer (questionid, answer, respondent) values (?, ?, ?);");
+//			state.setLong(1, ans.getQuestionid());
+//			state.setString(2, ans.getAnswer());
+//			state.setLong(3, ans.getRespondent());
+//			if (state.executeUpdate() == 0) {
+//				addFlag = false;
+//			}
+//		} catch (SQLException e) {
+//			addFlag = false;
+//
+//			System.out.println("Unknown SQLException");
+//			e.printStackTrace();
+//			System.exit(-12);
+//		}
+//		return addFlag;
+//	}
 	
 	/*
 	 * answer the question, add an answer to database,
@@ -330,7 +427,9 @@ public class QuestionDao {
 			state.setLong(1, question.getQuestionid());
 			state.setString(2, answerContent);
 			state.setLong(3, respondentId);
-			state.executeQuery();
+			if (state.executeUpdate() == 0) {
+				addFlag = false;
+			}
 		} catch (SQLException e) {
 			addFlag = false;
 

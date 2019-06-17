@@ -6,6 +6,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 
 public class PaperDao {
@@ -20,14 +21,14 @@ public class PaperDao {
 		paper = new Paper();
 	}
 	
-	/*
-	 * init the PaperDao, init the paper inside PaperDao with the paper
-	 * passed in as parameter
-	 */
-	public PaperDao(Paper p) {
-		this();
-		this.setPaper(p);
-	}
+//	/*
+//	 * init the PaperDao, init the paper inside PaperDao with the paper
+//	 * passed in as parameter
+//	 */
+//	public PaperDao(Paper p) {
+//		this();
+//		this.setPaper(p);
+//	}
 	
 	/*
 	 * get the paper inside the PaperDao
@@ -36,12 +37,12 @@ public class PaperDao {
 		return this.paper;
 	}
 	
-	/*
-	 * set the paper inside the PaperDao to the paper passed in.
-	 */
-	public Paper setPaper(Paper paper) {
-		return this.paper = paper;
-	}
+//	/*
+//	 * set the paper inside the PaperDao to the paper passed in.
+//	 */
+//	public Paper setPaper(Paper paper) {
+//		return this.paper = paper;
+//	}
 
 	/*
 	 * set the paper inside the PaperDao, using parameter paperid to get paper from database
@@ -68,43 +69,89 @@ public class PaperDao {
 		return this.paper;
 	}
 	
-	/*
-	 * add a new paper to database, after adding, the paper inside the PaperDao
-	 * will be set to the paper passed in as parameter
-	 */
-	public void addPaper(Paper paper) {
-		PreparedStatement state = null;
-		ResultSet rs = null;
-		try {
-			state = connection.prepareStatement(
-					"insert into q_paper (paperid, uid, paper_name, publish_time, cutoff_time) values (default, ?, ?, ?, ?);");
-			state.setLong(1, paper.getOwnerid());
-			state.setString(2, paper.getPapername());
-			state.setTimestamp(3, paper.getPublish_time());
-			state.setTimestamp(4, paper.getCutoff_time());
-			state.executeUpdate();
-			
-			state = connection.prepareStatement(
-					"select paperid from q_paper where uid = ? and paper_name = ? and publish_time = ? and cutoff_time = ?");
-			state.setLong(1, paper.getOwnerid());
-			state.setString(2, paper.getPapername());
-			state.setTimestamp(3, paper.getPublish_time());
-			state.setTimestamp(4, paper.getCutoff_time());
-			rs = state.executeQuery();
-
-			rs.next();
-			paper.setPaperid(rs.getLong("paperid"));
-		} catch (SQLException e) {
-			System.out.println("Unknown SQLException!");
-			e.printStackTrace();
-		}
-	}
+//	/*
+//	 * add a new paper to database, after adding, the paper inside the PaperDao
+//	 * will be set to the paper passed in as parameter
+//	 */
+//	public boolean addPaper(Paper paper) {
+//		PreparedStatement state = null;
+//		ResultSet rs = null;
+//		int result = 0;
+//		try {
+//			state = connection.prepareStatement(
+//					"insert into q_paper (paperid, uid, paper_name, publish_time, cutoff_time) values (default, ?, ?, ?, ?);");
+//			state.setLong(1, paper.getOwnerid());
+//			state.setString(2, paper.getPapername());
+//			state.setTimestamp(3, paper.getPublish_time());
+//			state.setTimestamp(4, paper.getCutoff_time());
+//			result = state.executeUpdate();
+//			if (result == 0) {
+//				return false;
+//			}
+//			
+//			state = connection.prepareStatement(
+//					"select paperid from q_paper where uid = ? and paper_name = ? and publish_time = ? and cutoff_time = ?");
+//			state.setLong(1, paper.getOwnerid());
+//			state.setString(2, paper.getPapername());
+//			state.setTimestamp(3, paper.getPublish_time());
+//			state.setTimestamp(4, paper.getCutoff_time());
+//			rs = state.executeQuery();
+//
+//			rs.next();
+//			paper.setPaperid(rs.getLong("paperid"));
+//		} catch (SQLException e) {
+//			System.out.println("Unknown SQLException!");
+//			e.printStackTrace();
+//		}
+//		return true;
+//	}
 	
 	/*
 	 * add paper to database, using the paper inside the PaperDao
 	 */
-	public void addPaper() {
-		this.addPaper(this.paper);
+	public boolean addPaper() {
+		return this.addPaper(paper.getOwnerid(), paper.getPapername(),
+				paper.getPublish_time(), paper.getCutoff_time());
+	}
+	
+	/*
+	 * you can just pass the parameters required to add a paper
+	 */
+	public boolean addPaper(Long ownerid, String papername, Timestamp publish_time, Timestamp cutoff_time) {
+		PreparedStatement state = null;
+		ResultSet rs = null;
+		int result = 0;
+		try {
+			state = connection.prepareStatement(
+					"insert into q_paper (paperid, uid, paper_name, publish_time, cutoff_time) values (default, ?, ?, ?, ?);");
+			state.setLong(1, ownerid);
+			state.setString(2, papername);
+			state.setTimestamp(3, publish_time);
+			state.setTimestamp(4, cutoff_time);
+			result = state.executeUpdate();
+			if (result == 0) {
+				return false;
+			}
+			
+			state = connection.prepareStatement(
+					"select paperid from q_paper where uid = ? and paper_name = ? and publish_time = ? and cutoff_time = ?");
+			state.setLong(1, ownerid);
+			state.setString(2, papername);
+			state.setTimestamp(3, publish_time);
+			state.setTimestamp(4, cutoff_time);
+			rs = state.executeQuery();
+
+			rs.next();
+			paper.setPaperid(rs.getLong("paperid"));
+			paper.setOwnerid(ownerid);
+			paper.setPapername(papername);
+			paper.setPublish_time(publish_time);
+			paper.setCutoff_time(cutoff_time);
+		} catch (SQLException e) {
+			System.out.println("Unknown SQLException!");
+			e.printStackTrace();
+		}
+		return true;
 	}
 	
 	/*
@@ -132,6 +179,24 @@ public class PaperDao {
 		} else {
 			return true;
 		}
+	}
+	
+	/*
+	 * delete paper specific by paperid
+	 */
+	public boolean deletePaper(Long paperid) {
+		PreparedStatement state = null;
+		int result = 0;
+		try {
+			state = connection.prepareStatement(
+					"call delete_paper(?);");
+			state.setLong(1, paperid);
+			result = state.executeUpdate();
+		} catch (SQLException e) {
+			result = 0;
+			e.printStackTrace();
+		}
+		return result != 0;
 	}
 	
 	/*
