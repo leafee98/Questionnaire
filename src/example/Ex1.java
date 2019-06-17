@@ -63,6 +63,7 @@ public class Ex1 {
 //		QuestionDao qdQuestionGame3 = new QuestionDao();
 //		QuestionDao qdQuestionGame4 = new QuestionDao();
 
+		System.out.println("DONE");
 	}
 
 }

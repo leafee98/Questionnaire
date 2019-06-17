@@ -236,14 +236,15 @@ public class PaperDao {
 	}
 	
 	/*
-	 * allow a user to do the paper inside the PaperDao
+	 * delete done flag in q_done_answer of the user presented by uid to this paper;
 	 */
 	public boolean addAllowUser(Long uid) {
 		PreparedStatement state = null;
 		boolean addFlag = true;
 		try {
 			state = connection.prepareStatement(
-					"insert into q_allow_answer (paperid, uid) values (?, ?);");
+					"delete from q_done_answer where paperid = ? and uid = ?");
+// 					"insert into q_allow_answer (paperid, uid) values (?, ?);")
 			state.setLong(1, paper.getPaperid());
 			state.setLong(2, uid);
 			state.executeQuery();
@@ -258,7 +259,7 @@ public class PaperDao {
 	}
 	
 	/*
-	 * get all user allowed to do the paper inside the PaperDao
+	 * get all user did not do the paper inside the PaperDao
 	 */
 	public ArrayList<User> getAllowedUser() {
 		ArrayList<User> allowedUser = new ArrayList<User>();
@@ -266,9 +267,11 @@ public class PaperDao {
 		ResultSet rs = null;
 		try {
 			state = connection.prepareStatement(
-					"select q_user.uid as uid, q_user.username as username, q_user.nickname as nickname " + 
-					"from q_allow_answer join q_user on q_allow_answer.uid = q_user.uid " +
-					"where paperid = ?;");
+					"select username, nickname, uid from q_user " +
+					"where uid not in (select uid from q_done_answer where paperid = ?) ");
+// 					"select q_user.uid as uid, q_user.username as username, q_user.nickname as nickname " + 
+// 					"from q_allow_answer join q_user on q_allow_answer.uid = q_user.uid " +
+// 					"where paperid = ?;");
 			state.setLong(1, paper.getPaperid());
 			rs = state.executeQuery();
 			while (rs.next()) {

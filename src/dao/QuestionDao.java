@@ -213,6 +213,8 @@ public class QuestionDao {
 	 */
 	public boolean addAnswer(String answerContent, Long respondentId) {
 		PreparedStatement state = null;
+		PreparedStatement stCheckDone = null;
+		ResultSet rs = null;
 		boolean addFlag = true;
 		try {
 			state = connection.prepareStatement(
@@ -222,6 +224,20 @@ public class QuestionDao {
 			state.setLong(3, respondentId);
 			if (state.executeUpdate() == 0) {
 				addFlag = false;
+			}
+			
+			
+			stCheckDone = connection.prepareStatement(
+					"select count(*) as cnt from q_done_answer where uid = ? and paperid = ?;");
+			stCheckDone.setLong(1, respondentId);
+			stCheckDone.setLong(2, question.getPaperid());
+			rs = stCheckDone.executeQuery();
+			rs.next();
+			if (rs.getLong("cnt") != 0) {
+				stCheckDone = connection.prepareStatement(
+						"insert into q_done_answer (uid, paperid) values (?, ?);");
+				stCheckDone.setLong(1, respondentId);
+				stCheckDone.setLong(2, question.getPaperid());
 			}
 		} catch (SQLException e) {
 			addFlag = false;

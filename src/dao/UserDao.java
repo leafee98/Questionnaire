@@ -359,9 +359,13 @@ public class UserDao {
 		ResultSet rs = null;
 		try {
 			state = connection.prepareStatement(
-					"select q_paper.paperid as paperid, q_paper.uid as uid, paper_name, publish_time, cutoff_time " +
-					"from q_paper join q_allow_answer on q_paper.paperid = q_allow_answer.paperid " +
-					"where q_allow_answer.uid = ? and NOW() between publish_time and cutoff_time;");
+					"select paperid, uid, paper_name, publish_time, cutoff_time " +
+					"from q_paper where paperid not in " +
+					"(select paperid from q_done_answer where uid = ?) " +
+					" and NOW() between publish_time and cutoff_time;");
+// 					"select q_paper.paperid as paperid, q_paper.uid as uid, paper_name, publish_time, cutoff_time " +
+// 					"from q_paper join q_allow_answer on q_paper.paperid = q_allow_answer.paperid " +
+// 					"where q_allow_answer.uid = ? and NOW() between publish_time and cutoff_time;");
 			state.setLong(1, user.getUid());
 			rs = state.executeQuery();
 			while (rs.next()) {

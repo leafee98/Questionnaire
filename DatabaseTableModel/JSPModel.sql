@@ -42,7 +42,7 @@ CREATE TABLE q_answer (
 	CONSTRAINT references_of_questionid FOREIGN KEY (questionid) REFERENCES q_question(questionid),
 	CONSTRAINT references_of_respondent FOREIGN KEY (respondent) REFERENCES q_user(uid)
 );
-CREATE TABLE q_allow_answer (
+CREATE TABLE q_done_answer (
 	paperid INT NOT NULL,
 	uid INT NOT NULL,
 	
