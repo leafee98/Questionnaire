@@ -8,6 +8,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.TreeMap;
 
 public class QuestionDao {
@@ -312,8 +315,8 @@ public class QuestionDao {
 	 * you can call this function only when the question is 'radio'(single select) or 
 	 * 'check'(multiple select), if not, the result will be null or undefined.
 	 */
-	public TreeMap<Selection, ArrayList<Answer>> analyzeSelection() {
-		TreeMap<Selection, ArrayList<Answer>> anaResult = 
+	public TreeMap<Selection, Integer> analyzeSelection() {
+		TreeMap<Selection, ArrayList<Answer>> tempRes = 
 				new TreeMap<Selection, ArrayList<Answer>>(new Comparator<Selection>() {
 					public int compare(Selection a, Selection b) {
 						return (int)(a.getSelectionid() - b.getSelectionid());
@@ -322,17 +325,24 @@ public class QuestionDao {
 		ArrayList<Selection> selections = this.getSelection();
 		ArrayList<Answer> answers = this.getAllAnswers();
 		for (int i = 0; i < selections.size(); ++i) {
-			anaResult.put(selections.get(i), new ArrayList<Answer>());
+			tempRes.put(selections.get(i), new ArrayList<Answer>());
 		}
 		try {
 			for (int i = 0; i < answers.size(); ++i) {
-				anaResult.get(Selection.parseSelection(
+				tempRes.get(Selection.parseSelection(
 						Long.parseLong(answers.get(i).getAnswer())
 						)).add(answers.get(i));
 			}
 		} catch (NumberFormatException e) {
-			anaResult = null;
+			tempRes = null;
 			e.printStackTrace();
+			return null;
+		}
+		TreeMap<Selection, Integer> anaResult = new TreeMap<Selection, Integer>();
+		Iterator<Entry<Selection, ArrayList<Answer>>> it = tempRes.entrySet().iterator();
+		while (it.hasNext()) {
+			Map.Entry<Selection, ArrayList<Answer>> mapIt = it.next();
+			anaResult.put(mapIt.getKey(), mapIt.getValue().size());
 		}
 		return anaResult;
 	}

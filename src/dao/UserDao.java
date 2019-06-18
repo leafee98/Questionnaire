@@ -7,11 +7,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Scanner;
-import java.util.TreeMap;
 
 public class UserDao {
 	private User user;
@@ -445,32 +441,32 @@ public class UserDao {
 		}
 		System.out.println("============");
 		
-		for (Paper p : arrPaper) {
-			for (Question q : new PaperDao(p.getPaperid()).getQuestion()) {
-				System.out.println(q.getQuestion());
-				QuestionDao qdd = new QuestionDao(q.getQuestionid());
-				// for (Selection s : qdd.getSelection()) {
-				// 	System.out.println(s.getSelection_describe());
-				// }
-				// for (Answer a : qdd.getAllAnswers()) {
-				// 	System.out.println(a.getAnswer());
-				// }
-				TreeMap<Selection, ArrayList<Answer>> qatm = qdd.analyzeSelection();
-				Iterator<Entry<Selection, ArrayList<Answer>>> it = qatm.entrySet().iterator();
-				while (it.hasNext()) {
-					Map.Entry<Selection, ArrayList<Answer>> mapIt = it.next();
-					System.out.print(mapIt.getKey().getSelection_describe() + " ::: ");
-					System.out.println(mapIt.getValue().size());
-				}
-				
-				ArrayList<Answer> speAns = qdd.getSpecificAnswers(new UserDao("leafee").getUser().getUid());
-				System.out.println("The User " + ud1.getUser().getNickname() + " 's Answer:");
-				for (Answer a : speAns) {
-					System.out.println(a.getAnswer());
-				}
-					
-			}
-		}
+//		for (Paper p : arrPaper) {
+//			for (Question q : new PaperDao(p.getPaperid()).getQuestion()) {
+//				System.out.println(q.getQuestion());
+//				QuestionDao qdd = new QuestionDao(q.getQuestionid());
+//				// for (Selection s : qdd.getSelection()) {
+//				// 	System.out.println(s.getSelection_describe());
+//				// }
+//				// for (Answer a : qdd.getAllAnswers()) {
+//				// 	System.out.println(a.getAnswer());
+//				// }
+//				TreeMap<Selection, ArrayList<Answer>> qatm = qdd.analyzeSelection();
+//				Iterator<Entry<Selection, ArrayList<Answer>>> it = qatm.entrySet().iterator();
+//				while (it.hasNext()) {
+//					Map.Entry<Selection, ArrayList<Answer>> mapIt = it.next();
+//					System.out.print(mapIt.getKey().getSelection_describe() + " ::: ");
+//					System.out.println(mapIt.getValue().size());
+//				}
+//				
+//				ArrayList<Answer> speAns = qdd.getSpecificAnswers(new UserDao("leafee").getUser().getUid());
+//				System.out.println("The User " + ud1.getUser().getNickname() + " 's Answer:");
+//				for (Answer a : speAns) {
+//					System.out.println(a.getAnswer());
+//				}
+//					
+//			}
+//		}
 		System.out.println("=============");
 
 		for (Paper p : arrPaper) {
