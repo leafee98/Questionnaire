@@ -238,6 +238,7 @@ public class QuestionDao {
 						"insert into q_done_answer (uid, paperid) values (?, ?);");
 				stCheckDone.setLong(1, respondentId);
 				stCheckDone.setLong(2, question.getPaperid());
+				stCheckDone.executeUpdate();
 			}
 		} catch (SQLException e) {
 			addFlag = false;
