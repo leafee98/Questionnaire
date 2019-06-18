@@ -338,7 +338,12 @@ public class QuestionDao {
 			e.printStackTrace();
 			return null;
 		}
-		TreeMap<Selection, Integer> anaResult = new TreeMap<Selection, Integer>();
+		TreeMap<Selection, Integer> anaResult =
+				new TreeMap<Selection, Integer>(new Comparator<Selection>() {
+					public int compare(Selection a, Selection b) {
+						return (int)(a.getSelectionid() - b.getSelectionid());
+					}
+				});
 		Iterator<Entry<Selection, ArrayList<Answer>>> it = tempRes.entrySet().iterator();
 		while (it.hasNext()) {
 			Map.Entry<Selection, ArrayList<Answer>> mapIt = it.next();
