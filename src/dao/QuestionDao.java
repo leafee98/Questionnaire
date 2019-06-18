@@ -233,7 +233,7 @@ public class QuestionDao {
 			stCheckDone.setLong(2, question.getPaperid());
 			rs = stCheckDone.executeQuery();
 			rs.next();
-			if (rs.getLong("cnt") != 0) {
+			if (rs.getLong("cnt") == 0) {
 				stCheckDone = connection.prepareStatement(
 						"insert into q_done_answer (uid, paperid) values (?, ?);");
 				stCheckDone.setLong(1, respondentId);
